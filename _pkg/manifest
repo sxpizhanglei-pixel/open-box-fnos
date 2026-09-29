@@ -1,0 +1,15 @@
+appname         = open-box
+version         = 1.0.0
+display_name    = Open-Box
+platform        = x86
+maintainer      = Open-Box & FnOS Community
+maintainer_url  = https://github.com/sxpizhanglei-pixel/open-box-fnos
+distributor     = sxpizhanglei-pixel
+distributor_url = https://github.com/sxpizhanglei-pixel/open-box-fnos
+desktop_uidir   = ui
+desktop_applaunchname = open-box.Application
+service_port    = 9090
+checkport       = true
+desc            = 基于 sing-box 内核与 Web 控制台的一体化代理面板（自动同步 Open-Box 上游）
+source          = thirdparty
+checksum        = e4f7889ae07c1d0344e5e34253d076fd

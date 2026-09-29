@@ -1,3 +1,5 @@
 .gh_token
 run_publish.sh
 publish_to_github.sh
+.git-credentials-local
+.gh_rewrite
