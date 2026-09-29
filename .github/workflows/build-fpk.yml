@@ -32,11 +32,32 @@ jobs:
           tags: ghcr.io/${{ env.REPO }}/open-box-fnos:latest
       - name: Create FPK Package
         run: |
+          set -e
+          OWNER="$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]' | cut -d/ -f1)"
+          # ---- fnOS .fpk 包结构(安装器识别必需文件) ----
+          rm -rf build_fpk
           mkdir -p build_fpk
-          cp manifest.json compose.yaml entrypoint.sh build_fpk/ 2>/dev/null || true
-          sed -i "s|ghcr.io/\${{ github.repository_owner }}/open-box-fnos:latest|ghcr.io/${{ env.REPO }}/open-box-fnos:latest|g" build_fpk/compose.yaml
+          # 1. 应用元数据(安装器解析的核心文件)
+          cp manifest.xml build_fpk/
+          # 2. 安装/启动/停止/卸载钩子
+          cp fpk_install.sh fpk_start.sh fpk_stop.sh fpk_uninstalled.sh build_fpk/
+          # 3. 图标
+          cp icon.png build_fpk/
+          # 4. 说明
+          cp README.txt build_fpk/
+          # 5. 运行时 compose(安装钩子会再部署到数据卷)
+          cp compose.yaml build_fpk/compose.yaml
+          #    把占位 owner 替换为真实账号(与刚推送的 ghcr 镜像一致)
+          sed -i "s|ghcr.io/sxpizhanglei-pixel/open-box-fnos:latest|ghcr.io/${OWNER}/open-box-fnos:latest|g" build_fpk/compose.yaml
+          sed -i "s|ghcr.io/sxpizhanglei-pixel/open-box-fnos:latest|ghcr.io/${OWNER}/open-box-fnos:latest|g" build_fpk/manifest.xml
+          # 6. 打包:tar.gz 压缩,文件名用 .fpk 后缀
           cd build_fpk
-          tar -zcvf ../open-box-fnos.fpk *
+          tar -czf ../open-box-fnos.fpk .
+          cd ..
+          echo "=== .fpk 内容自检 ==="
+          tar -tzf open-box-fnos.fpk
+          echo "=== 包大小 ==="
+          ls -la open-box-fnos.fpk
       - name: Release FPK Package
         uses: softprops/action-gh-release@v1
         with:
