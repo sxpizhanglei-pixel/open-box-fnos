@@ -1,0 +1,18 @@
+#!/bin/bash
+
+### Stop hook: called before the container is removed on uninstall/upgrade.
+### Clean up any lingering container that would block the appcenter re-create.
+
+FILE_PATH="${TRIM_APPDEST:-/vol1/@appcenter/open-box}/docker/docker-compose.yaml"
+DOCKER_NAME=""
+if [ -f "$FILE_PATH" ]; then
+    DOCKER_NAME=$(cat "$FILE_PATH" | grep "container_name" | awk -F ':' '{print $2}' | xargs)
+fi
+if [ -z "$DOCKER_NAME" ]; then
+    DOCKER_NAME="open-box"
+fi
+echo "service_preuninst: stopping container ${DOCKER_NAME}" >> "${TRIM_TEMP_LOGFILE:-/dev/null}" 2>&1 || true
+if docker ps -q --filter "name=^/${DOCKER_NAME}$" 2>/dev/null | grep -q .; then
+    docker rm -f "${DOCKER_NAME}" >/dev/null 2>&1 || true
+fi
+exit 0
