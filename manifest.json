@@ -1,0 +1,18 @@
+{
+  "manifest_version": 1,
+  "app_id": "open-box",
+  "name": "Open-Box",
+  "version": "1.0.0",
+  "description": "基于 sing-box 内核与 Web 控制台的一体化代理面板（自动同步 Open-Box 上游）",
+  "developer": "Open-Box & FnOS Community",
+  "architecture": ["x86_64"],
+  "min_fnos_version": "1.2.0",
+  "category": "network",
+  "icon": "icon.png",
+  "main": "compose.yaml",
+  "web_ui": {
+    "port": 9090,
+    "path": "/",
+    "protocol": "http"
+  }
+}

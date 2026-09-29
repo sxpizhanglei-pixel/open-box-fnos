@@ -1,0 +1,49 @@
+name: Build Open-Box FPK for fnOS
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Lowercase Repository Name
+        id: repo
+        run: echo "REPO=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      - name: Build and push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/${{ env.REPO }}/open-box-fnos:latest
+      - name: Create FPK Package
+        run: |
+          mkdir -p build_fpk
+          cp manifest.json compose.yaml entrypoint.sh build_fpk/ 2>/dev/null || true
+          sed -i "s|ghcr.io/\${{ github.repository_owner }}/open-box-fnos:latest|ghcr.io/${{ env.REPO }}/open-box-fnos:latest|g" build_fpk/compose.yaml
+          cd build_fpk
+          tar -zcvf ../open-box-fnos.fpk *
+      - name: Release FPK Package
+        uses: softprops/action-gh-release@v1
+        with:
+          files: open-box-fnos.fpk
+          tag_name: v1.0.${{ github.run_number }}
+          name: Open-Box fnOS Package v1.0.${{ github.run_number }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
