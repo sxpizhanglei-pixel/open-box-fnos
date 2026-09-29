@@ -2,11 +2,13 @@ FROM alpine:latest
 RUN apk add --no-cache ca-certificates curl jq bash iptables iproute2 tzdata yq unzip
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then SB_ARCH="amd64"; else SB_ARCH="arm64"; fi && \
-    LATEST_SB=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | jq -r '.tag_name') && \
+    LATEST_SB=$(curl -sL https://api.github.com/repos/SagerNet/sing-box/releases/latest | jq -r '.tag_name') && \
     VERSION=${LATEST_SB#v} && \
-    curl -Lo /tmp/sing-box.tar.gz "https://github.com/SagerNet/sing-box/releases/download/${LATEST_SB}/sing-box-${VERSION}-linux-${SB_ARCH}.tar.gz" && \
-    tar -zxvf /tmp/sing-box.tar.gz -C /tmp/ && \
-    mv /tmp/sing-box-${VERSION}-linux-${SB_ARCH}/sing-box /usr/local/bin/ && \
+    curl -Lso /tmp/sing-box.tar.gz "https://github.com/SagerNet/sing-box/releases/download/${LATEST_SB}/sing-box-${VERSION}-linux-${SB_ARCH}.tar.gz" && \
+    tar -zxf /tmp/sing-box.tar.gz -C /tmp/ && \
+    mv /tmp/sing-box-${VERSION}-linux-${SB_ARCH}/sing-box /usr/local/bin/sing-box && \
+    chmod +x /usr/local/bin/sing-box && \
+    /usr/local/bin/sing-box version && \
     rm -rf /tmp/*
 RUN mkdir -p /app/ui && \
     curl -Lo /tmp/ui.zip "https://github.com/MetaCubeX/Yacd-meta/archive/gh-pages.zip" && \
