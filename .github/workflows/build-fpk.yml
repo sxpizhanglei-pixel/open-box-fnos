@@ -39,64 +39,50 @@ jobs:
         id: owner
         run: echo "OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
 
-      - name: Generate .fpk Package
+      - name: Download official fnpack
         run: |
-          set -euo pipefail
+          set -e
+          FNPACK_VER="1.2.3"
+          FNPACK_URL="https://github.com/fnnas-apps/fnpack/raw/main/archives/fnpack-${FNPACK_VER}-linux-amd64"
+          curl -fsSL -o /usr/local/bin/fnpack "${FNPACK_URL}"
+          chmod +x /usr/local/bin/fnpack
+          fnpack 2>&1 | head -5 || true
+          echo "fnpack ready: $(fnpack 2>&1 | grep -i version || echo 'installed')"
+
+      - name: Patch compose image to real owner
+        run: |
           OWNER="${{ env.OWNER }}"
+          SRC="fnpack-src/open-box/app/docker/docker-compose.yaml"
+          # 仓库里 compose 写死占位 owner,CI 时替换为真实账号,保持与已推送的 ghcr 镜像一致
+          sed -i "s|ghcr.io/sxpizhanglei-pixel/|ghcr.io/${OWNER}/|" "${SRC}"
+          echo "=== compose after patch ==="
+          cat "${SRC}"
 
-          # ---- 1) 生成 app.tgz(fnOS 安装器解压到 TRIM_APPDEST) ----
-          rm -rf _tgzroot && mkdir -p _tgzroot/docker _tgzroot/config _tgzroot/ui
-          cp -a fnos/docker/docker-compose.yaml _tgzroot/docker/
-          cp -a fnos/config/config.json        _tgzroot/config/
-          cp -a fnos/ui/index.html             _tgzroot/ui/
-          # 包内 compose 用真实 owner 替换占位
-          sed -i "s|ghcr.io/sxpizhanglei-pixel/|ghcr.io/${OWNER}/|" _tgzroot/docker/docker-compose.yaml
-
-          # ---- 2) 组装包目录 ----
-          rm -rf _pkg && mkdir -p _pkg/cmd _pkg/config _pkg/ui
-          # 2a) shared-cmd 框架(vendored 的 conversun shared/cmd)
-          cp shared-cmd/* _pkg/cmd/
-          # 2b) Open-Box 专属 cmd(main docker 版 + service-setup)覆盖
-          cp fnos/cmd/main _pkg/cmd/main
-          cp fnos/cmd/service-setup _pkg/cmd/service-setup
-          chmod +x _pkg/cmd/*
-          # 2c) config / ui(供 service_postinst 读取 + desktop_uidir)
-          cp -a fnos/config/. _pkg/config/
-          cp -a fnos/ui/. _pkg/ui/
-          # 2d) 端口转发定义
-          cp fnos/OpenBox.sc _pkg/
-          # 2e) manifest(key=value,写入 checksum)
-          cp fnos/manifest _pkg/manifest
-          # 2f) 图标(PNG,fnOS 安装器要求)
-          python3 - <<'PY'
-          import struct, zlib
-          def chunk(t, d):
-              return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t+d)&0xffffffff)
-          for size, dst in [(64, "_pkg/ICON.PNG"), (256, "_pkg/ICON_256.PNG")]:
-              sig = b'\x89PNG\r\n\x1a\n'
-              IHDR = chunk(b'IHDR', struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0))
-              row = b'\x00' + bytes([0x1e,0x88,0xe5,255]) * size
-              IDAT = chunk(b'IDAT', zlib.compress(row * size))
-              IEND = chunk(b'IEND', b'')
-              open(dst, 'wb').write(sig + IHDR + IDAT + IEND)
-          PY
-
-          # ---- 3) 打 app.tgz + 计算 checksum 写进 manifest ----
-          tar -czf _pkg/app.tgz -C _tgzroot docker config ui
-          CKSUM=$(md5sum _pkg/app.tgz | cut -d' ' -f1)
-          sed -i "s/^checksum.*/checksum        = ${CKSUM}/" _pkg/manifest
-
-          # ---- 4) 打 .fpk(tar.gz,文件名遵循 <appname>_<version>_<platform>.fpk) ----
-          ( cd _pkg && tar -czf "../open-box_1.0.0_x86.fpk" . )
-          echo "=== .fpk 内容自检 ==="
-          tar -tzf open-box_1.0.0_x86.fpk
-          echo "=== 包大小 ==="
-          ls -la open-box_1.0.0_x86.fpk
+      - name: Build .fpk with official fnpack
+        run: |
+          set -e
+          cd fnpack-src/open-box
+          # 清除可能残留的本地 .fpk 与脚手架污染
+          rm -f open-box.fpk
+          find . -name '.DS_Store' -delete || true
+          fnpack build -d .
+          echo "=== 产物自检 ==="
+          ls -la open-box.fpk
+          echo "=== 解包核对结构 ==="
+          mkdir -p /tmp/fpkcheck && tar -xzf open-box.fpk -C /tmp/fpkcheck
+          find /tmp/fpkcheck -type f | sort
+          echo "=== manifest(应含 fnpack 自动写入的 checksum) ==="
+          cat /tmp/fpkcheck/manifest
+          echo "=== app.tgz 内 compose ==="
+          mkdir -p /tmp/tgzcheck && tar -xzf /tmp/fpkcheck/app.tgz -C /tmp/tgzcheck
+          cat /tmp/tgzcheck/docker/docker-compose.yaml
+          # 把产物拷到仓库根,供 release step 引用
+          cp open-box.fpk ../../open-box.fpk
 
       - name: Release .fpk Package
         uses: softprops/action-gh-release@v1
         with:
-          files: open-box_1.0.0_x86.fpk
+          files: open-box.fpk
           tag_name: v1.0.${{ github.run_number }}
           name: Open-Box fnOS Package v1.0.${{ github.run_number }}
           draft: false
