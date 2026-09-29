@@ -1,0 +1,20 @@
+{
+  "docker-project": {
+    "projects": [
+      {
+        "name": "open-box",
+        "path": "docker"
+      }
+    ]
+  },
+  "data-share": {
+    "shares": [
+      {
+        "name": "open-box"
+      },
+      {
+        "name": "open-box/data"
+      }
+    ]
+  }
+}

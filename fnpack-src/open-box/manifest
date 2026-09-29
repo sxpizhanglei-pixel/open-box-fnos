@@ -1,0 +1,10 @@
+appname               = open-box
+version               = 1.0.0
+display_name          = Open-Box
+desc                  = 基于 sing-box 内核与 Web 控制台的一体化代理面板（自动同步 Open-Box 上游）
+platform              = x86
+source                = thirdparty
+maintainer            = sxpizhanglei-pixel
+distributor           = sxpizhanglei-pixel
+desktop_uidir         = ui
+desktop_applaunchname = open-box.Application

@@ -1,5 +1,8 @@
-.gh_token
-run_publish.sh
-publish_to_github.sh
-.git-credentials-local
-.gh_rewrite
+# 本地临时/构建产物
+_pkg/
+_tgzroot/
+_*.sh
+.gh_*
+# fnpack 构建产物(由 CI 重新生成)
+fnpack-src/open-box/open-box.fpk
+fnpack-src/verify_build.sh
