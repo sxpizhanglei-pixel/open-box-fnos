@@ -1,10 +1,8 @@
 #!/bin/bash
 ### This script is called after the user installs the application.
-DATA_DIR="/var/apps/open-box/shares/open-box/data"
-UI_DIR="${DATA_DIR}/ui"
-mkdir -p "${DATA_DIR}" "${UI_DIR}"
-if [ ! -f "${DATA_DIR}/config.json" ]; then
-  cat > "${DATA_DIR}/config.json" <<'CONF'
+mkdir -p "/var/apps/open-box/shares/open-box/data" "/var/apps/open-box/shares/open-box/data/ui" 2>/dev/null || true
+if [ ! -f "/var/apps/open-box/shares/open-box/data/config.json" ]; then
+  cat > "/var/apps/open-box/shares/open-box/data/config.json" <<'EOF'
 {
   "log": { "level": "info", "timestamp": true },
   "experimental": {
@@ -21,6 +19,6 @@ if [ ! -f "${DATA_DIR}/config.json" ]; then
     { "type": "direct", "tag": "direct" }
   ]
 }
-CONF
+EOF
 fi
 exit 0
