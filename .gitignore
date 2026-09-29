@@ -3,6 +3,8 @@ _pkg/
 _tgzroot/
 _*.sh
 .gh_*
+# 本地 git 凭据(含 token,绝不入库)
+.git-credentials-local
 # fnpack 构建产物(由 CI 重新生成)
 fnpack-src/open-box/open-box.fpk
 fnpack-src/verify_build.sh
