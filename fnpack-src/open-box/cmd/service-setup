@@ -1,8 +1,5 @@
 #!/bin/bash
 
-### Stop hook: called before the container is removed on uninstall/upgrade.
-### Clean up any lingering container that would block the appcenter re-create.
-
 FILE_PATH="${TRIM_APPDEST:-/vol1/@appcenter/open-box}/docker/docker-compose.yaml"
 DOCKER_NAME=""
 if [ -f "$FILE_PATH" ]; then
